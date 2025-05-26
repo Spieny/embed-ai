@@ -1,5 +1,5 @@
 'use client'
-import React, { useRef, useState } from 'react'
+import React, { useRef, useState, useTransition } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Label } from '../ui/label'
 import { Input } from '../ui/input'
@@ -41,7 +41,7 @@ const getFileName = (path: string) => {
 }
 
 const Orchestrator = () => {
-  const [loading, setLoading] = useState(false);
+  const [loading, startTransition] = useTransition();
   const [result, setResult] = useState<ImplementationResult | null>(null);
   const codeRef = useRef<HTMLInputElement>(null);
 
@@ -56,17 +56,15 @@ const Orchestrator = () => {
     const request = codeRef.current?.value;
     if (!request?.trim()) return;
     
-    setLoading(true);
-    try {
-      // Handle the request here
-      const res = await implementFeature(request);
-      setResult(res);
-      console.log(res);
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
-    }   
+    startTransition(async () => {
+      try {
+        const res = await implementFeature(request);
+        setResult(res);
+        console.log(res);
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    });
   };
 
   return (

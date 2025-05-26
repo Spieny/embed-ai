@@ -4,7 +4,7 @@ import { Label } from '../ui/label'
 import { Input } from '../ui/input'
 import { Mail, TicketSlash, Wrench, UserRound, Bot, LoaderCircle } from 'lucide-react';
 import { Badge } from '../ui/badge';
-import { useRef, useState } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { handleCustomerQuery } from '@/app/patterns/helpers';
 import Markdown from 'react-markdown';
 
@@ -20,17 +20,17 @@ type RoutingResult = {
 const Routing = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [result, setResult] = useState<RoutingResult | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, startTransition] = useTransition();
   
-  const handleKeyUp = async (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && inputRef.current) {
-      setLoading(true);
-      const query = inputRef.current.value;
-      // Handle the query here
-      const { response, classification } = await handleCustomerQuery(query);
-      setResult({ response, classification });
-      setLoading(false);
-    }
+  const handleKeyUp = (e: React.KeyboardEvent) => {
+    if (e.key !== 'Enter') return;
+    startTransition(async () => {
+        if (inputRef.current) {
+          const query = inputRef.current.value;
+          const { response, classification } = await handleCustomerQuery(query);
+          setResult({ response, classification });
+        }
+    });
   };
 
   return (

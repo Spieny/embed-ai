@@ -1,5 +1,5 @@
 'use client'
-import { ReactNode, useRef, useState } from 'react'
+import { ReactNode, useRef, useState, useTransition } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Textarea } from '../ui/textarea'
 import { Label } from '../ui/label'
@@ -30,7 +30,7 @@ type ParallelResult = {
 }
 
 const Parallel = () => {
-  const [loading, setLoading] = useState(false);
+  const [loading, startTransition] = useTransition();
   const [result, setResult] = useState<ParallelResult | null>(null);
   const codeRef = useRef<HTMLTextAreaElement>(null);
 
@@ -41,21 +41,19 @@ const Parallel = () => {
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     const code = codeRef.current?.value;
     if (!code?.trim()) return;
-    
-    setLoading(true);
-    try {
-      const {reviews, summary} = await parallelCodeReview(code);
-      setResult({ reviews: reviews as Review[], summary});
-      console.log(reviews);
-      console.log(summary);
-    } catch (error) {
-      console.error('Error during code review:', error);
-    } finally {
-      setLoading(false);
-    }
+    startTransition(async () => {
+      try {
+        const {reviews, summary} = await parallelCodeReview(code);
+        setResult({ reviews: reviews as Review[], summary});
+        console.log(reviews);
+        console.log(summary);
+      } catch (error) {
+        console.error('Error during code review:', error);
+      }
+    });
   };
 
   const securityChecks = result?.reviews?.find((review) => review?.type === 'security');

@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Label } from '../ui/label'
 import { Input } from '../ui/input'
-import { useRef, useState } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { generateMarketingCopy } from '@/app/patterns/helpers'
 import Markdown from 'react-markdown';
 import { Badge } from '../ui/badge'
@@ -19,16 +19,16 @@ type MarketingCopyResult = {
 const Sequential = () => {
   const ref = useRef<HTMLInputElement>(null);
   const [result, setResult] = useState<MarketingCopyResult | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, startTransition] = useTransition();
 
-  const generateCopy = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const generateCopy = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return;
-    setLoading(true);
-    if (ref.current && ref.current.value) {
-        const { copy, qualityMetrics } = await generateMarketingCopy(ref.current.value);
-        setResult({copy, qualityMetrics});
-        setLoading(false)
-    }
+    startTransition(async () => {
+        if (ref.current && ref.current.value) {
+            const { copy, qualityMetrics } = await generateMarketingCopy(ref.current.value);
+            setResult({copy, qualityMetrics});
+        }
+    });
   }
   
   return (

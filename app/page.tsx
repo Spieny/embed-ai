@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useRef, useState } from "react";
+import { useRef, useState, useTransition } from "react";
 import Markdown from "react-markdown";
 import { useChat, experimental_useObject as useObject } from '@ai-sdk/react';
 import { Calendar } from "@/components/ui/calendar";
@@ -28,28 +28,26 @@ export default function Home() {
 const GenerateTextSection = () => {
   const countryRef = useRef<HTMLInputElement>(null);
   const [result, setResult] = useState<string>("");
-  const [loading, setLoading] = useState(false);
+  const [loading, startTransition] = useTransition();
 
-  const handleSubmit = async () => {
-    if (!countryRef.current?.value) return;
-    
-    setLoading(true);
-    try {
-      const response = await fetch("/api/generate-text", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ country: countryRef.current.value }),
-      });
-      const data = await response.json();
-      setResult(data.text);
-    } catch (error) {
-      console.error("Error:", error);
-      setResult("An error occurred while generating the text.");
-    } finally {
-      setLoading(false);
-    }
+  const handleSubmit = () => {
+    startTransition(async () => {
+      if (!countryRef.current?.value) return;
+      try {
+        const response = await fetch("/api/generate-text", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ country: countryRef.current.value }),
+        });
+        const data = await response.json();
+        setResult(data.text);
+      } catch (error) {
+        console.error("Error:", error);
+        setResult("An error occurred while generating the text.");
+      }
+    });
   };
 
   const handleClear = () => { setResult(''); }
@@ -159,26 +157,25 @@ const weatherBg = {
 
 const GenerateObjectSection = () => {
   const [date, setDate] = useState<Date>();
-  const [loading, setLoading] = useState(false);
+  const [loading, startTransition] = useTransition();
   const [result, setResult] = useState<Weather>();
 
-  const handleGenerate = async () => {
-    if (!date) return;
-  
-    setLoading(true);
-    try {
-      const response = await fetch('/api/generate-object', {
-        method: 'POST',
-        body: JSON.stringify({ date: date.toISOString() })
-      });
-      const data = await response.json();
-      setResult(data);
-      console.log(data);
-    } catch (error) {
-      console.error('Error generating weather report:', error);
-    } finally {
-      setLoading(false);
-    }
+  const handleGenerate = () => {
+    startTransition(async () => {
+      if (!date) return;
+    
+      try {
+        const response = await fetch('/api/generate-object', {
+          method: 'POST',
+          body: JSON.stringify({ date: date.toISOString() })
+        });
+        const data = await response.json();
+        setResult(data);
+        console.log(data);
+      } catch (error) {
+        console.error('Error generating weather report:', error);
+      }
+    });
   };
   return (
     <Card className="w-full max-w-[1200px]">
