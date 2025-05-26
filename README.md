@@ -68,9 +68,12 @@ Follow these steps to set up and run the project locally.
     pnpm install
     ```
 
+    
+*Note: you might need to add ```--force``` or ```--legacy-peer-deps``` when installing because the current [**shadcn/ui**](https://ui.shadcn.com/) have not yet supported __React 19__.*
+
 ### Environment Variables
 
-This project requires API keys for the AI providers you intend to use. Create a `.env.local` file in the root of your project and add the following:
+This project requires API keys for the AI providers you intend to use. Create a `.env` file in the root of your project and add the following:
 
 ```env
 GOOGLE_GENERATIVE_AI_API_KEY=your_google_api_key_here
