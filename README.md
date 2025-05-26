@@ -7,7 +7,6 @@ This repository showcases a simple yet powerful application built with the Verce
 - [Introduction](#introduction)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
-- [Demo](#demo)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
@@ -27,7 +26,7 @@ The **Vercel AI SDK** is a free, open-source library that simplifies the process
 * **Simple LLM Generation:** Demonstrates basic text generation, including direct `generate` calls for single responses and `streamText` for real-time, token-by-token output.
 * **Structured Output Generation:** Shows how to use the SDK to generate structured JSON objects directly from LLMs, simplifying data parsing.
 * **Multi-Agent System Workflow Patterns:** Explores common patterns for building applications where multiple AI agents collaborate to achieve a goal, showcasing communication and coordination between agents.
-* **MCP Integration to LLM:** Illustrates how to integrate your specific "MCP" system or data source with the LLM using the Vercel AI SDK.
+* **MCP Integration to LLM:** Illustrates how to integrate the LLM with MCP Server using Vercel AI SDK.
 ---
 
 ## Tech Stack
@@ -38,12 +37,6 @@ The **Vercel AI SDK** is a free, open-source library that simplifies the process
 * [**Tailwind CSS**](https://tailwindcss.com/) - Utility-first CSS framework for rapid UI development.
 * **Gemini Generative AI Provider** (`@ai-sdk/google`)
 * [**shadcn/ui**](https://ui.shadcn.com/) - Open Source Re-usable React components
-
----
-
-## Demo
-
-You can try out a live demo of this application [here](YOUR_VERCEL_DEPLOYMENT_URL_HERE).
 
 ---
 
