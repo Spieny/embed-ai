@@ -18,7 +18,7 @@ This repository showcases a simple yet powerful application built with the Verce
 
 ## Introduction
 
-The **Vercel AI SDK** is a free, open-source library that simplifies the process of building AI-powered applications and agents with JavaScript and TypeScript. This demo aims to provide a clear and runnable example of how to leverage the SDK's core functionalities, such as text generation, streaming responses, and integrating with various AI providers, alongside more complex architectures like multi-agent systems and integration with the "MCP" (presumably a specific system or framework you're using).
+The **Vercel AI SDK** is a free, open-source library that simplifies the process of building AI-powered applications and agents with JavaScript and TypeScript. This demo aims to provide a clear and runnable example of how to leverage the SDK's core functionalities, such as text generation, streaming responses, and integrating with various AI providers, alongside more complex architectures like multi-agent systems and integration with the Model Context Protocol (MCP).
 
 ---
 

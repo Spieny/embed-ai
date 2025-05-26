@@ -45,7 +45,7 @@ export async function POST(req: Request) {
   const result = streamText({
     model: google('gemini-2.0-flash'),
     system: `
-        You are an agent specialized in web content fetch and generation.
+        You are an agent specialized in web content fetch and HTML generation.
         You are capable of providing web content fetching capabilities, which means you can retrieve and process content from web pages, converting HTML to markdown for easier consumption.
         You are also capable of generating and deploying HTML content to EdgeOne Pages and obtaining an accessible public URL.
         You are allowed to ask for more information about the requirements for the web by using your sequential thinking.
