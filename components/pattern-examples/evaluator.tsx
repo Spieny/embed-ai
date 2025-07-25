@@ -66,11 +66,9 @@ const Evaluator = () => {
                 <div className="flex gap-4">
                     <Badge className="text-sm">Iterations: {loading ? <LoaderCircle size={20} className="animate-spin" /> : result?.iterationsRequired}</Badge>
                 </div>
-                {loading ? <div className='w-1/2 h-3 bg-gray-400 rounded animate-pulse' /> : (
-                    <div className="w-full p-5 border rounded-lg max-w-[798px]">
-                        <Markdown>{result?.finalTranslation}</Markdown>
-                    </div>
-                )}
+                <div className="w-full p-5 border rounded-lg max-w-[798px]">
+                    <Markdown>{result?.finalTranslation}</Markdown>
+                </div>
             </div>
         </CardContent>
     </Card>
