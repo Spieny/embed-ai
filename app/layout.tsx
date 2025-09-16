@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Vercel AI SDK Demo",
-  description: "Demo Application to showcase main features of Vercel AI SDK",
+  title: "AI 助手",
+  description: "AI 助手",
 };
 
 export default function RootLayout({
