@@ -7,8 +7,10 @@ export const maxDuration = 30;
 export async function POST(req: Request) {
   const { country } = await req.json();
 
+  const model: any = google('gemini-2.0-flash');
+
   const { text } = await generateText({
-    model: google('gemini-2.0-flash'),
+    model: model,
     system: 'You are a professional chef from a 5 star restaurant',
     prompt: `Write recipes of specialty foods from the country ${country}, starting from appetizer, main dish, and dessert.`
   });

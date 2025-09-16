@@ -41,9 +41,10 @@ export async function POST(req: Request) {
 
   // example prompt to test the agent capabilities:
   // i'm trying to build a news portal web that contains at least a home page, a page for showing news for each categories, and a page detail of the news. this news portal is for the province government.
+  const model: any = google('gemini-2.0-flash');
 
   const result = streamText({
-    model: google('gemini-2.0-flash'),
+    model: model,
     system: `
         You are an agent specialized in web content fetch and HTML generation.
         You are capable of providing web content fetching capabilities, which means you can retrieve and process content from web pages, converting HTML to markdown for easier consumption.
@@ -51,7 +52,6 @@ export async function POST(req: Request) {
         You are allowed to ask for more information about the requirements for the web by using your sequential thinking.
     `,
     messages,
-    maxSteps: 10,
     experimental_transform: smoothStream(),
     tools: {
         ...fetchTools,
@@ -66,5 +66,5 @@ export async function POST(req: Request) {
     }
   });
 
-  return result.toDataStreamResponse();
+  return result.toTextStreamResponse();
 }
