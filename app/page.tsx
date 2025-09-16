@@ -2,11 +2,11 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Markdown from "react-markdown";
 import { LoaderCircle} from "lucide-react";
 import Image from 'next/image';
-
+import { Upload } from "lucide-react";
 
 export default function Home() {
   return (
@@ -130,6 +130,13 @@ const StreamTextSection = () => {
 };
 
 const StreamTextSection2 = () => {
+  const [uploading, setUploading] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  // 处理上传按钮点击
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
   // 保存对话消息
   const [messages, setMessages] = useState<Array<{ role: string, content: string }>>([]);
   const [input, setInput] = useState('');
@@ -178,6 +185,39 @@ const StreamTextSection2 = () => {
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('上传失败');
+      } else {
+        const data = await response.json();
+        console.log('上传成功:', data); 
+      }
+      
+      // 上传成功后可以将文件链接添加到对话中
+      const fileMessage = { 
+        role: 'user', 
+        content: `[上传文件] ${file.name}` 
+      };
+      setMessages(prev => [...prev, fileMessage]);
+    } catch (error) {
+      console.error('文件上传错误:', error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <Card className="w-full max-w-[800px]">
       <CardHeader>
@@ -206,10 +246,7 @@ const StreamTextSection2 = () => {
           ))}
         </section>
 
-        <form 
-          onSubmit={handleSubmit} 
-          className="flex gap-2"
-        >
+        <form onSubmit={handleSubmit} className="flex gap-2">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -217,13 +254,39 @@ const StreamTextSection2 = () => {
             className="flex-1"
             disabled={isLoading}
           />
-          <Button type="submit" disabled={isLoading || !input.trim()}>
-            {isLoading ? (
-              <LoaderCircle className="animate-spin" size={20} />
-            ) : (
-              '发送'
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <label className="cursor-pointer">
+              <Input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                onChange={handleFileUpload}
+                disabled={isLoading || uploading}
+                accept=".png,.jpg,.jpeg"
+                max="10485760"
+              />
+              <Button 
+                type="button" 
+                variant="outline"
+                disabled={isLoading || uploading}
+                className="px-3"
+                onClick={handleUploadClick}
+              >
+                {uploading ? (
+                  <LoaderCircle className="animate-spin" size={20} />
+                ) : (
+                  <Upload size={20} />
+                )}
+              </Button>
+            </label>
+            <Button type="submit" disabled={isLoading || !input.trim()}>
+              {isLoading ? (
+                <LoaderCircle className="animate-spin" size={20} />
+              ) : (
+                '发送'
+              )}
+            </Button>
+          </div>
         </form>
       </CardContent>
     </Card>
