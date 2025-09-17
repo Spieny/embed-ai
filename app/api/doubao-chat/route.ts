@@ -1,6 +1,3 @@
-import { createOpenAI } from "@ai-sdk/openai";
-import { streamText } from "ai";
-
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
@@ -15,7 +12,7 @@ export async function POST(req: Request) {
     body: JSON.stringify({
       model: process.env.DOUBAO_MODEL!,
       messages,
-      stream: true, // ⚠️关键：请求流式
+      stream: true,
     }),
   });
 
@@ -26,7 +23,7 @@ export async function POST(req: Request) {
 
   const stream = new ReadableStream({
     async start(controller) {
-      const reader = resp.body.getReader();
+      const reader = resp.body!.getReader();
       const decoder = new TextDecoder();
 
       while (true) {
@@ -35,7 +32,6 @@ export async function POST(req: Request) {
 
         const chunk = decoder.decode(value, { stream: true });
 
-        // Ark 流式返回是 SSE 格式，逐行处理
         for (const line of chunk.split("\n")) {
           const trimmed = line.trim();
           if (!trimmed || !trimmed.startsWith("data:")) continue;
@@ -56,8 +52,13 @@ export async function POST(req: Request) {
                 : delta;
               if (text) controller.enqueue(new TextEncoder().encode(text));
             }
-          } catch (err) {
-            console.error("JSON parse error:", err, trimmed);
+          } catch (err: any) {
+            if (err.code === "ERR_INVALID_STATE") {
+                console.warn("Stream already closed, stop enqueue");
+                return; // 用户断开时，直接结束
+            }
+            console.error("Stream error:", err, trimmed);
+            throw err;
           }
         }
       }

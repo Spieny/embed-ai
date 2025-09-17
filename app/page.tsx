@@ -156,17 +156,7 @@ const StreamTextSection2 = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isLoading) return;
-
-
-    // 添加用户消息
-    const userMessage = { role: 'user', content: input };
-    const newMessages = [...messages, userMessage] as ChatMessage[];
-
-    const toModelMessages = (messages: ChatMessage[]): ModelMessage[] => {
+  const toModelMessages = (messages: ChatMessage[]): ModelMessage[] => {
       const converted: ModelMessage[] = messages.map((msg) => {
         const role = ['user', 'assistant', 'system'].includes(msg.role) ? (msg.role as any) : 'user';
         const content: ModelContent[] = [];
@@ -182,7 +172,7 @@ const StreamTextSection2 = () => {
               const t = c.text.trim();
               if (t) content.push({ type: 'text', text: t });
             }
-            // image 或 image_url 两种兼容写法都处理
+            // 用户上传图片
             else if ((c.type === 'image_url') && c.image_url?.url) {
               content.push({ type: 'image_url', image_url: { url: c.image_url.url } });
             }
@@ -191,10 +181,17 @@ const StreamTextSection2 = () => {
 
         return { role, content };
       });
-        // （可选）简单校验并打印，便于调试
-    console.log('toModelMessages ->', JSON.stringify(converted, null, 2));
     return converted;
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isLoading) return;
+
+
+    // 添加用户消息
+    const userMessage = { role: 'user', content: input };
+    const newMessages = [...messages, userMessage] as ChatMessage[];
 
     setMessages([...messages, userMessage]);
     setIsLoading(true);
@@ -210,18 +207,30 @@ const StreamTextSection2 = () => {
       const reader = response.body?.getReader();
       if (!reader) return;
 
+
       // 处理流式响应
       const textDecoder = new TextDecoder();
-      const assistantMessage = { role: 'assistant', content: '' };
+      const decoder = new TextDecoder();
+      let assistantMessage = { role: 'assistant', content: '' };
+
+      setMessages((prev) => [...prev, assistantMessage]);
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const text = textDecoder.decode(value);
-        assistantMessage.content += text;
+        const chunk = decoder.decode(value, { stream: true });
 
-        setMessages([...newMessages, assistantMessage]);
+        // 追加到最后一个消息
+        assistantMessage = {
+          ...assistantMessage,
+          content: assistantMessage.content + chunk,
+        };
+        setMessages((prev) => {
+          const newMsgs = [...prev];
+          newMsgs[newMsgs.length - 1] = assistantMessage;
+          return newMsgs;
+        });
       }
     } catch (error) {
       console.error('错误:', error);
