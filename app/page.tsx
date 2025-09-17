@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { useState, useRef } from "react";
 import Markdown from "react-markdown";
-import { LoaderCircle} from "lucide-react";
+import { LoaderCircle } from "lucide-react";
 import Image from 'next/image';
 import { Upload } from "lucide-react";
 
@@ -12,10 +12,10 @@ export default function Home() {
   return (
     <div className="justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <h1 className="text-2xl font-semibold mb-5 flex items-center gap-2">
-        <Image 
+        <Image
           src="https://ark-auto-2100466578-cn-beijing-default.tos-cn-beijing.volces.com/model_cardXr5mijtuwf.png"
           alt="Logo"
-          width={30}  
+          width={30}
           height={30}
           className="object-contain"
         />
@@ -49,7 +49,7 @@ const StreamTextSection = () => {
       const response = await fetch('/api/stream-text', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [userMessage] })
+        body: JSON.stringify({ messages: userMessage })
       });
 
       const reader = response.body?.getReader();
@@ -66,7 +66,7 @@ const StreamTextSection = () => {
         // 将新的文本片段添加到助手的回复中
         const text = textDecoder.decode(value);
         assistantMessage.content += text;
-        
+
         // 更新消息列表，保留之前所有的消息
         setMessages([...newMessages, assistantMessage]);
       }
@@ -88,16 +88,14 @@ const StreamTextSection = () => {
           {messages.map((message, i) => (
             <div
               key={i}
-              className={`flex ${
-                message.role === 'user' ? 'justify-end' : 'justify-start'
-              }`}
+              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'
+                }`}
             >
               <div
-                className={`rounded-lg px-4 py-2 max-w-[80%] ${
-                  message.role === 'user'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted'
-                }`}
+                className={`rounded-lg px-4 py-2 max-w-[80%] ${message.role === 'user'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted'
+                  }`}
               >
                 <Markdown>{message.content}</Markdown>
               </div>
@@ -105,8 +103,8 @@ const StreamTextSection = () => {
           ))}
         </section>
 
-        <form 
-          onSubmit={handleSubmit} 
+        <form
+          onSubmit={handleSubmit}
           className="flex gap-2"
         >
           <Input
@@ -132,24 +130,73 @@ const StreamTextSection = () => {
 const StreamTextSection2 = () => {
   const [uploading, setUploading] = useState(false);
 
+  type MessageContent = {
+    image_url?: {
+      url: string;
+    };
+    type: 'image_url' | 'text';
+    text?: string;
+  }
+
+  interface ChatMessage {
+    content: string | MessageContent[];
+    role: string;
+  }
+
+  type ModelContent = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } };
+  type ModelMessage = { role: 'user' | 'assistant' | 'system'; content: ModelContent[] };
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   // 处理上传按钮点击
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
   // 保存对话消息
-  const [messages, setMessages] = useState<Array<{ role: string, content: string }>>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [uploaded, setUploaded] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (isLoading) return;
+
 
     // 添加用户消息
     const userMessage = { role: 'user', content: input };
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+    const newMessages = [...messages, userMessage] as ChatMessage[];
+
+    const toModelMessages = (messages: ChatMessage[]): ModelMessage[] => {
+      const converted: ModelMessage[] = messages.map((msg) => {
+        const role = ['user', 'assistant', 'system'].includes(msg.role) ? (msg.role as any) : 'user';
+        const content: ModelContent[] = [];
+
+        if (typeof msg.content === 'string') {
+          const t = msg.content.trim();
+          if (t) content.push({ type: 'text', text: t });
+        } else if (Array.isArray(msg.content)) {
+          for (const c of msg.content) {
+            if (!c) continue;
+            // 文本
+            if (c.type === 'text' && typeof c.text === 'string') {
+              const t = c.text.trim();
+              if (t) content.push({ type: 'text', text: t });
+            }
+            // image 或 image_url 两种兼容写法都处理
+            else if ((c.type === 'image_url') && c.image_url?.url) {
+              content.push({ type: 'image_url', image_url: { url: c.image_url.url } });
+            }
+          }
+        }
+
+        return { role, content };
+      });
+        // （可选）简单校验并打印，便于调试
+    console.log('toModelMessages ->', JSON.stringify(converted, null, 2));
+    return converted;
+  };
+
+    setMessages([...messages, userMessage]);
     setIsLoading(true);
     setInput('');
 
@@ -157,7 +204,7 @@ const StreamTextSection2 = () => {
       const response = await fetch('/api/doubao-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [userMessage] })
+        body: JSON.stringify({ messages: toModelMessages(newMessages) })
       });
 
       const reader = response.body?.getReader();
@@ -171,11 +218,9 @@ const StreamTextSection2 = () => {
         const { done, value } = await reader.read();
         if (done) break;
 
-        // 将新的文本片段添加到助手的回复中
         const text = textDecoder.decode(value);
         assistantMessage.content += text;
-        
-        // 更新消息列表，保留之前所有的消息
+
         setMessages([...newMessages, assistantMessage]);
       }
     } catch (error) {
@@ -190,6 +235,7 @@ const StreamTextSection2 = () => {
     if (!file) return;
 
     setUploading(true);
+    let data: any;
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -201,16 +247,32 @@ const StreamTextSection2 = () => {
       if (!response.ok) {
         throw new Error('上传失败');
       } else {
-        const data = await response.json();
-        console.log('上传成功:', data); 
+        data = await response.json();
+        console.log('上传成功:', data.url);
+        setUploaded(true);
       }
-      
+
       // 上传成功后可以将文件链接添加到对话中
-      const fileMessage = { 
-        role: 'user', 
-        content: `[上传文件] ${file.name}` 
+      const fileMessage: ChatMessage = {
+        role: 'user',
+        content: [
+          {
+            type: 'image_url',
+            image_url: {
+              url: data.url
+            }
+          }
+          // {
+          //   type: 'text',
+          //   text: '请描述这张图片'
+          // }
+        ]
       };
-      setMessages(prev => [...prev, fileMessage]);
+      console.log('new fileMessage', fileMessage);
+      const newMessages = [...messages, fileMessage];
+      console.log('newMessages', newMessages);
+      setMessages(newMessages);
+
     } catch (error) {
       console.error('文件上传错误:', error);
     } finally {
@@ -229,18 +291,37 @@ const StreamTextSection2 = () => {
           {messages.map((message, i) => (
             <div
               key={i}
-              className={`flex ${
-                message.role === 'user' ? 'justify-end' : 'justify-start'
-              }`}
+              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'
+                }`}
             >
               <div
-                className={`rounded-lg px-4 py-2 max-w-[80%] ${
-                  message.role === 'user'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted'
-                }`}
+                className={`rounded-lg px-4 py-2 max-w-[80%] ${message.role === 'user'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted'
+                  }`}
               >
-                <Markdown>{message.content}</Markdown>
+                {Array.isArray(message.content) ? (
+                  <div className="space-y-2">
+                    {message.content.map((content, index) => (
+                      <div key={index}>
+                        {content.type === 'image_url' && content.image_url && (
+                          <Image
+                            src={content.image_url.url}
+                            alt="Uploaded image"
+                            width={200}
+                            height={200}
+                            className="rounded-md"
+                          />
+                        )}
+                        {content.type === 'text' && content.text && (
+                          <Markdown>{content.text}</Markdown>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <Markdown>{message.content}</Markdown>
+                )}
               </div>
             </div>
           ))}
@@ -265,8 +346,8 @@ const StreamTextSection2 = () => {
                 accept=".png,.jpg,.jpeg"
                 max="10485760"
               />
-              <Button 
-                type="button" 
+              <Button
+                type="button"
                 variant="outline"
                 disabled={isLoading || uploading}
                 className="px-3"
@@ -279,7 +360,7 @@ const StreamTextSection2 = () => {
                 )}
               </Button>
             </label>
-            <Button type="submit" disabled={isLoading || !input.trim()}>
+            <Button type="submit" disabled={isLoading}>
               {isLoading ? (
                 <LoaderCircle className="animate-spin" size={20} />
               ) : (

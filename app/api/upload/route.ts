@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     await s3Client.send(command);
 
     // 构建文件的公共访问 URL
-    const fileUrl = `https://${process.env.S3_HOST}/${process.env.S3_BUCKET_NAME}/${uniqueFileName}`;
+    const fileUrl = `${process.env.S3_HOST}/${process.env.S3_BUCKET_NAME}/${uniqueFileName}`;
 
     // 返回上传成功的响应
     return NextResponse.json({

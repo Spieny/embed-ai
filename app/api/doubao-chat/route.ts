@@ -6,24 +6,66 @@ export const maxDuration = 30;
 export async function POST(req: Request) {
   const { messages } = await req.json();
 
-  const client = createOpenAI({
-    apiKey: process.env.DOUBAO_API_KEY!,
-    baseURL: 'https://ark.cn-beijing.volces.com/api/v3',
+  const resp = await fetch("https://ark.cn-beijing.volces.com/api/v3/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.DOUBAO_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: process.env.DOUBAO_MODEL!,
+      messages,
+      stream: true, // ⚠️关键：请求流式
+    }),
   });
 
+  if (!resp.ok || !resp.body) {
+    const errText = await resp.text();
+    return new Response(errText, { status: resp.status });
+  }
 
+  const stream = new ReadableStream({
+    async start(controller) {
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
 
-  const model = client.chat(process.env.DOUBAO_MODEL!);
-  const result = await streamText({
-    model,
-    system: `你是被嵌入到一个问卷中的对话助手，使用中文回答问题，今天是 ${new Date().toLocaleDateString()}。
-             用户正在做一个研究调查问卷，旨在探讨人工智能（AI）在决策任务中的影响。
-             用户查看问卷给出的股票历史数据后，将会向您提问一系列关于股票的问题。
-             请你做简单的回答，如果用户问的问题和调查问卷无关，请礼貌的告诉用户，你只能回答和股票相关的问题。`,
-    messages,
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+
+        // Ark 流式返回是 SSE 格式，逐行处理
+        for (const line of chunk.split("\n")) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith("data:")) continue;
+
+          if (trimmed === "data: [DONE]") {
+            controller.close();
+            return;
+          }
+
+          try {
+            const json = JSON.parse(trimmed.replace(/^data:\s*/, ""));
+            const delta = json?.choices?.[0]?.delta?.content;
+
+            if (delta) {
+              // 只输出文本类型
+              const text = Array.isArray(delta)
+                ? delta.filter((c: any) => c.type === "text").map((c: any) => c.text).join("")
+                : delta;
+              if (text) controller.enqueue(new TextEncoder().encode(text));
+            }
+          } catch (err) {
+            console.error("JSON parse error:", err, trimmed);
+          }
+        }
+      }
+      controller.close();
+    },
   });
 
-  console.log("Doubao streaming response:", result);
-
-  return result.toTextStreamResponse();
+  return new Response(stream, {
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
+  });
 }

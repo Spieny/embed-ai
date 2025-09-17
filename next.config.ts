@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'chat.deepseek.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'obs-gdgz.cucloud.cn',
       }
     ],
   },
