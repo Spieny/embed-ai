@@ -1,0 +1,39 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/@prisma/client"
+}
+
+model Conversation {
+  id              Int       @id @default(autoincrement())
+  conversationId  String    @unique
+  userPhoneTail   String
+  userName        String
+  createdAt       DateTime  @default(now())
+  messages        ConversationMessage[]
+}
+
+model ConversationMessage {
+  id              Int       @id @default(autoincrement())
+  conversationId  String
+  role            String
+  contentType     String
+  contentText     String?
+  contentImageUrl String?
+  createdAt       DateTime  @default(now())
+
+  conversation    Conversation @relation(fields: [conversationId], references: [conversationId], onDelete: Cascade)
+
+  @@index([conversationId])
+}
+
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}

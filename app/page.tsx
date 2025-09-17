@@ -34,7 +34,7 @@ export default function Home() {
 const StreamTextSection2 = () => {
   const [uploading, setUploading] = useState(false);
   // 添加用户信息状态
-  const [userInfo, setUserInfo] = useState<{ phone: string; name: string } | null>(null);
+  const [userInfo, setUserInfo] = useState<{ phone: string; name: string; conversationId: string } | null>(null);
   const [showUserInfoDialog, setShowUserInfoDialog] = useState(true);
   const [phoneInput, setPhoneInput] = useState('');
   const [nameInput, setNameInput] = useState('');
@@ -127,10 +127,16 @@ const StreamTextSection2 = () => {
   // 提交用户信息
   const handleUserInfoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (validateUserInfo()) {
+      const conversationId = crypto.randomUUID();
+
+      console.log('本次对话唯一id:', conversationId);
+
       const userInfo = {
         phone: phoneInput,
-        name: nameInput
+        name: nameInput,
+        conversationId: conversationId, // 生成唯一对话ID
       };
       setUserInfo(userInfo);
       setShowUserInfoDialog(false);
@@ -178,14 +184,13 @@ const StreamTextSection2 = () => {
       
       const userCode = userInfo ? generateUserCode(userInfo.name, userInfo.phone) : '';
 
-      console.log('用户编码:', userCode);
-
       // 发送对话历史和用户信息到保存接口（通过headers传输）
       await fetch('/api/save-conversation', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           userInfo: userInfo,
-          messages: toModelMessages(newMessages)
+          messages: toModelMessages([userMessage])
         })
       });
 
@@ -229,9 +234,10 @@ const StreamTextSection2 = () => {
       // 对话完成后再次保存完整对话
       await fetch('/api/save-conversation', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           userInfo: userInfo,
-          messages: toModelMessages([...newMessages, assistantMessage])
+          messages: toModelMessages([assistantMessage])
         })
       });
     } catch (error) {
